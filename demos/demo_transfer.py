@@ -44,8 +44,14 @@ def main(args):
     name = testdata[i]['imagename']
     savepath = '{}/{}.jpg'.format(savefolder, name)
     images = testdata[i]['image'].to(device)[None,...]
+    # id_codedict contains flame's parameters 
     with torch.no_grad():
         id_codedict = deca.encode(images)
+    # added
+    flame_parameters = np.hstack((id_codedict['shape'].cpu().numpy(),
+                                  id_codedict['exp'].cpu().numpy(),
+                                  id_codedict['pose'].cpu().numpy()))
+    # id_opdict contains uv_maps
     id_opdict, id_visdict = deca.decode(id_codedict)
     id_visdict = {x:id_visdict[x] for x in ['inputs', 'shape_detail_images']}   
 

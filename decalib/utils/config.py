@@ -23,6 +23,11 @@ cfg.model = CN()
 cfg.model.topology_path = os.path.join(cfg.deca_dir, 'data', 'head_template.obj')
 # texture data original from http://files.is.tue.mpg.de/tbolkart/FLAME/FLAME_texture_data.zip
 cfg.model.dense_template_path = os.path.join(cfg.deca_dir, 'data', 'texture_data_256.npy')
+# added
+cfg.model.mp_model_path = os.path.join(cfg.deca_dir, 'data', 'face_landmarker.task')
+cfg.model.only_face_path = os.path.join(cfg.deca_dir, 'data', 'only_face.png') 
+cfg.model.only_eyes_path = os.path.join(cfg.deca_dir, 'data', 'only_eyes.png')
+# added
 cfg.model.fixed_displacement_path = os.path.join(cfg.deca_dir, 'data', 'fixed_displacement_256.npy')
 cfg.model.flame_model_path = os.path.join(cfg.deca_dir, 'data', 'generic_model.pkl') 
 cfg.model.flame_lmk_embedding_path = os.path.join(cfg.deca_dir, 'data', 'landmark_embedding.npy') 

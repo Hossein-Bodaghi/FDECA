@@ -31,6 +31,7 @@ from .models.decoders import Generator
 from .utils import util
 from .utils.rotation_converter import batch_euler2axis
 from .utils.tensor_cropper import transform_points
+from .utils.face_mask import masking_face
 from .datasets import datasets
 from .utils.config import cfg
 torch.backends.cudnn.benchmark = True
@@ -53,10 +54,12 @@ class DECA(nn.Module):
         set_rasterizer(self.cfg.rasterizer_type)
         self.render = SRenderY(self.image_size, obj_filename=model_cfg.topology_path, uv_size=model_cfg.uv_size, rasterizer_type=self.cfg.rasterizer_type).to(self.device)
         # face mask for rendering details
-        mask = imread(model_cfg.face_eye_mask_path).astype(np.float32)/255.; mask = torch.from_numpy(mask[:,:,0])[None,None,:,:].contiguous()
-        self.uv_face_eye_mask = F.interpolate(mask, [model_cfg.uv_size, model_cfg.uv_size]).to(self.device)
-        mask = imread(model_cfg.face_mask_path).astype(np.float32)/255.; mask = torch.from_numpy(mask[:,:,0])[None,None,:,:].contiguous()
-        self.uv_face_mask = F.interpolate(mask, [model_cfg.uv_size, model_cfg.uv_size]).to(self.device)
+        # added
+        only_face_mask = imread(self.cfg.model.only_face_path).astype(np.float32)/255.; only_face_mask = torch.from_numpy(only_face_mask[:,:,0])[None,None,:,:].contiguous()
+        self.only_face_mask = F.interpolate(only_face_mask,[model_cfg.uv_size, model_cfg.uv_size]).to(self.device)
+        only_eyes_mask = imread(self.cfg.model.only_eyes_path).astype(np.float32)/255.; only_eyes_mask = torch.from_numpy(only_eyes_mask[:,:,0])[None,None,:,:].contiguous()
+        self.only_eyes_mask = F.interpolate(only_eyes_mask,[model_cfg.uv_size, model_cfg.uv_size]).to(self.device)
+        # added
         # displacement correction
         fixed_dis = np.load(model_cfg.fixed_displacement_path)
         self.fixed_uv_dis = torch.tensor(fixed_dis).float().to(self.device)
@@ -162,6 +165,18 @@ class DECA(nn.Module):
         images = codedict['images']
         batch_size = images.shape[0]
         
+        ##### added
+        # making image usable for mediapipe
+        img = images[0]*255
+        img = img.permute(1, 2, 0).detach().cpu().numpy()
+        img = img.astype(np.uint8)
+        # creating the mask
+        face_mask = masking_face(img, self.cfg.model.mp_model_path)
+        # make it compatible with other masks
+        face_mask = torch.from_numpy(face_mask).type(torch.float)/255
+        face_mask = face_mask.permute(2,0,1).unsqueeze(0).to(self.device)
+        ##### added    
+        
         ## decode
         verts, landmarks2d, landmarks3d = self.flame(shape_params=codedict['shape'], expression_params=codedict['exp'], pose_params=codedict['pose'])
         if self.cfg.model.use_tex:
@@ -236,10 +251,16 @@ class DECA(nn.Module):
             ## TODO: current resolution 256x256, support higher resolution, and add visibility
             uv_pverts = self.render.world2uv(trans_verts)
             uv_gt = F.grid_sample(images, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
+            # added
+            tr_face_mask = F.grid_sample(face_mask, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
+            final_mask = tr_face_mask * self.only_face_mask + self.only_eyes_mask
+            # added
             if self.cfg.model.use_tex:
                 ## TODO: poisson blending should give better-looking results
                 if self.cfg.model.extract_tex:
-                    uv_texture_gt = uv_gt[:,:3,:,:]*self.uv_face_eye_mask + (uv_texture[:,:3,:,:]*(1-self.uv_face_eye_mask))
+                    # changed. using created mask instead of constant mask
+                    uv_texture_gt = uv_gt[:,:3,:,:]*(final_mask)  + (uv_texture[:,:3,:,:]*(1-final_mask))
+                    # changed
                 else:
                     uv_texture_gt = uv_texture[:,:3,:,:]
             else:

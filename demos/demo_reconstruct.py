@@ -56,8 +56,14 @@ def main(args):
                 tform = torch.inverse(tform).transpose(1,2).to(device)
                 original_image = testdata[i]['original_image'][None, ...].to(device)
                 _, orig_visdict = deca.decode(codedict, render_orig=True, original_image=original_image, tform=tform)    
-                orig_visdict['inputs'] = original_image            
-
+                orig_visdict['inputs'] = original_image      
+        # added   
+        # id_codedict (deca.encode output) contains flame's parameters 
+        flame_parameters = np.hstack((id_codedict['shape'].cpu().numpy(),
+                              id_codedict['exp'].cpu().numpy(),
+                              id_codedict['pose'].cpu().numpy()))
+        np.save(os.path.join(savefolder, name, save_type, name + 'identity.npy'), flame_parameters)
+        # added
         if args.saveDepth or args.saveKpt or args.saveObj or args.saveMat or args.saveImages:
             os.makedirs(os.path.join(savefolder, name), exist_ok=True)
         # -- save results
