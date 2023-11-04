@@ -97,7 +97,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/DECA/TestSamples/Partners/Ali.jpg', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/DECA/TestSamples/Partners/elahe_resize.png', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
     parser.add_argument('-s', '--savefolder', default='TestSamples/examples/results', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')

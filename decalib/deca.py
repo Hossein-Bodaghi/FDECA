@@ -263,12 +263,30 @@ class DECA(nn.Module):
                     # changed. using created mask instead of constant mask
                     uv_texture_gt = uv_gt[:,:3,:,:]*(final_mask)  + (uv_texture[:,:3,:,:]*(1-final_mask))
                     # changed
+                    
+                    
+                    face_gt = uv_gt[:,:3,:,:]*(final_mask) 
+                    face_image = util.tensor2image(face_gt[0])
+                    
+                    final_mask_np = (final_mask).squeeze(0).cpu().numpy()[0]
+                    final_mask_np = (final_mask_np * 255).astype(np.uint8)
+                    border_size = 10
+                    border_mask = np.zeros_like(final_mask_np)
+                    height, width = final_mask_np.shape
+                    border_mask[border_size:height - border_size, border_size:width - border_size] = 255
+                    
+                    blurred_border = cv2.GaussianBlur(face_image, (15, 15), 0)
+                    
+                    result = cv2.add(cv2.multiply(face_image, final_mask_np), cv2.multiply(blurred_border, border_mask))
+
+                    cv2.imwrite('result_image.jpg', result)
                 else:
                     uv_texture_gt = uv_texture[:,:3,:,:]
             else:
                 uv_texture_gt = uv_gt[:,:3,:,:]*self.uv_face_eye_mask + (torch.ones_like(uv_gt[:,:3,:,:])*(1-self.uv_face_eye_mask)*0.7)
             
             opdict['uv_texture_gt'] = uv_texture_gt
+            opdict['inpainting_mask'] = self.uv_face_eye_mask - final_mask
             visdict = {
                 'inputs': images, 
                 'landmarks2d': util.tensor_vis_landmarks(images, landmarks2d),
@@ -312,6 +330,16 @@ class DECA(nn.Module):
         vertices = opdict['verts'][i].cpu().numpy()
         faces = self.render.faces[0].cpu().numpy()
         texture = util.tensor2image(opdict['uv_texture_gt'][i])
+        
+        ################## inpainting texture #########################
+        final_mask = opdict['inpainting_mask'][i]
+            
+        final_mask_np = final_mask.squeeze(0).cpu().numpy()
+            
+        texture = cv2.inpaint(texture,(final_mask_np* 255.).astype(np.uint8) , inpaintRadius=25, flags=cv2.INPAINT_TELEA)
+
+        ######################## End of inpainting texture #########################
+        
         uvcoords = self.render.raw_uvcoords[0].cpu().numpy()
         uvfaces = self.render.uvfaces[0].cpu().numpy()
         # save coarse mesh, with texture and normal map
