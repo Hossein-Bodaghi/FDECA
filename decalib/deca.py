@@ -263,23 +263,7 @@ class DECA(nn.Module):
                     # changed. using created mask instead of constant mask
                     uv_texture_gt = uv_gt[:,:3,:,:]*(final_mask)  + (uv_texture[:,:3,:,:]*(1-final_mask))
                     # changed
-                    
-                    
-                    face_gt = uv_gt[:,:3,:,:]*(final_mask) 
-                    face_image = util.tensor2image(face_gt[0])
-                    
-                    final_mask_np = (final_mask).squeeze(0).cpu().numpy()[0]
-                    final_mask_np = (final_mask_np * 255).astype(np.uint8)
-                    border_size = 10
-                    border_mask = np.zeros_like(final_mask_np)
-                    height, width = final_mask_np.shape
-                    border_mask[border_size:height - border_size, border_size:width - border_size] = 255
-                    
-                    blurred_border = cv2.GaussianBlur(face_image, (15, 15), 0)
-                    
-                    result = cv2.add(cv2.multiply(face_image, final_mask_np), cv2.multiply(blurred_border, border_mask))
 
-                    cv2.imwrite('result_image.jpg', result)
                 else:
                     uv_texture_gt = uv_texture[:,:3,:,:]
             else:
