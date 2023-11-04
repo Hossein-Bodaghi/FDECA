@@ -59,10 +59,10 @@ def main(args):
                 orig_visdict['inputs'] = original_image      
         # added   
         # id_codedict (deca.encode output) contains flame's parameters 
-        flame_parameters = np.hstack((id_codedict['shape'].cpu().numpy(),
-                              id_codedict['exp'].cpu().numpy(),
-                              id_codedict['pose'].cpu().numpy()))
-        np.save(os.path.join(savefolder, name, save_type, name + 'identity.npy'), flame_parameters)
+        flame_parameters = np.hstack((codedict['shape'].cpu().numpy(),
+                              codedict['exp'].cpu().numpy(),
+                              codedict['pose'].cpu().numpy()))
+        np.save(os.path.join(savefolder, 'identity.npy'), flame_parameters)
         # added
         if args.saveDepth or args.saveKpt or args.saveObj or args.saveMat or args.saveImages:
             os.makedirs(os.path.join(savefolder, name), exist_ok=True)
@@ -97,7 +97,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='TestSamples/examples', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/DECA/TestSamples/Partners/Ali.jpg', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
     parser.add_argument('-s', '--savefolder', default='TestSamples/examples/results', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')
@@ -111,12 +111,12 @@ if __name__ == '__main__':
     parser.add_argument('--detector', default='fan', type=str,
                         help='detector for cropping face, check decalib/detectors.py for details' )
     # rendering option
-    parser.add_argument('--rasterizer_type', default='standard', type=str,
+    parser.add_argument('--rasterizer_type', default='pytorch3d', type=str,
                         help='rasterizer type: pytorch3d or standard' )
     parser.add_argument('--render_orig', default=True, type=lambda x: x.lower() in ['true', '1'],
                         help='whether to render results in original image size, currently only works when rasterizer_type=standard')
     # save
-    parser.add_argument('--useTex', default=False, type=lambda x: x.lower() in ['true', '1'],
+    parser.add_argument('--useTex', default=True, type=lambda x: x.lower() in ['true', '1'],
                         help='whether to use FLAME texture model to generate uv texture map, \
                             set it to True only if you downloaded texture model' )
     parser.add_argument('--extractTex', default=True, type=lambda x: x.lower() in ['true', '1'],
