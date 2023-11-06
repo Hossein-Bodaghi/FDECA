@@ -24,6 +24,7 @@ from skimage.io import imread, imsave
 from skimage.transform import estimate_transform, warp, resize, rescale
 from glob import glob
 import scipy.io
+from ..utils.config import cfg
 
 from . import detectors
 
@@ -68,9 +69,8 @@ class TestData(Dataset):
         self.iscrop = iscrop
         self.resolution_inp = crop_size
         if face_detector == 'fan':
-            self.face_detector = detectors.FAN()
-        # elif face_detector == 'mtcnn':
-        #     self.face_detector = detectors.MTCNN()
+            self.face_detector = detectors.FMP(cfg.model.mp_model_path)
+
         else:
             print(f'please check the detector: {face_detector}')
             exit()
@@ -105,6 +105,7 @@ class TestData(Dataset):
             # provide kpt as txt file, or mat file (for AFLW2000)
             kpt_matpath = os.path.splitext(imagepath)[0]+'.mat'
             kpt_txtpath = os.path.splitext(imagepath)[0]+'.txt'
+            print(imagepath)
             if os.path.exists(kpt_matpath):
                 kpt = scipy.io.loadmat(kpt_matpath)['pt3d_68'].T        
                 left = np.min(kpt[:,0]); right = np.max(kpt[:,0]); 
@@ -116,6 +117,7 @@ class TestData(Dataset):
                 top = np.min(kpt[:,1]); bottom = np.max(kpt[:,1])
                 old_size, center = self.bbox2point(left, right, top, bottom, type='kpt68')
             else:
+                image = image.astype(np.uint8)
                 bbox, bbox_type = self.face_detector.run(image)
                 if len(bbox) < 4:
                     print('no face detected! run original image')

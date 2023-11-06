@@ -34,6 +34,7 @@ from .utils.tensor_cropper import transform_points
 from .utils.face_mask import masking_face
 from .datasets import datasets
 from .utils.config import cfg
+import matplotlib.pyplot as plt
 torch.backends.cudnn.benchmark = True
 
 class DECA(nn.Module):
@@ -174,6 +175,7 @@ class DECA(nn.Module):
         img = img.astype(np.uint8)
         # creating the mask
         face_mask = masking_face(img, self.cfg.model.mp_model_path)
+        # plt.imshow(face_mask)
         # make it compatible with other masks
         face_mask = torch.from_numpy(face_mask).type(torch.float)/255
         face_mask = face_mask.permute(2,0,1).unsqueeze(0).to(self.device)

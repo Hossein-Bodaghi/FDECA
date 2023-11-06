@@ -29,13 +29,14 @@ from decalib.utils import util
 from decalib.utils.config import cfg as deca_cfg
 from decalib.utils.tensor_cropper import transform_points
 
+
 def main(args):
     # if args.rasterizer_type != 'standard':
     #     args.render_orig = False
     savefolder = args.savefolder
     device = args.device
     os.makedirs(savefolder, exist_ok=True)
-
+   
     # load test images 
     testdata = datasets.TestData(args.inputpath, iscrop=args.iscrop, face_detector=args.detector, sample_step=args.sample_step)
 
@@ -47,6 +48,7 @@ def main(args):
     # for i in range(len(testdata)):
     for i in tqdm(range(len(testdata))):
         name = testdata[i]['imagename']
+        os.makedirs(os.path.join(savefolder, name), exist_ok=True)
         images = testdata[i]['image'].to(device)[None,...]
         with torch.no_grad():
             codedict = deca.encode(images)
@@ -62,7 +64,7 @@ def main(args):
         flame_parameters = np.hstack((codedict['shape'].cpu().numpy(),
                               codedict['exp'].cpu().numpy(),
                               codedict['pose'].cpu().numpy()))
-        np.save(os.path.join(savefolder, 'identity.npy'), flame_parameters)
+        np.save(os.path.join(savefolder, name, 'identity.npy'), flame_parameters)
         # added
         if args.saveDepth or args.saveKpt or args.saveObj or args.saveMat or args.saveImages:
             os.makedirs(os.path.join(savefolder, name), exist_ok=True)
@@ -76,6 +78,7 @@ def main(args):
             np.savetxt(os.path.join(savefolder, name, name + '_kpt3d.txt'), opdict['landmarks3d'][0].cpu().numpy())
         if args.saveObj:
             deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
+            print('the path is',os.path.join(savefolder, name, name + '.obj'))
         if args.saveMat:
             opdict = util.dict_tensor2npy(opdict)
             savemat(os.path.join(savefolder, name, name + '.mat'), opdict)
@@ -97,9 +100,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/DECA/TestSamples/Partners/elahe_resize.png', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/FDECA/TestSamples/examples/Partners/RoshanRavan.png', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
-    parser.add_argument('-s', '--savefolder', default='TestSamples/examples/results', type=str,
+    parser.add_argument('-s', '--savefolder', default='/home/Shiva_roshanravan/Documents/FDECA/Test', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')
     parser.add_argument('--device', default='cuda', type=str,
                         help='set device, cpu for using cpu' )
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                         help='whether to save 2D and 3D keypoints' )
     parser.add_argument('--saveDepth', default=False, type=lambda x: x.lower() in ['true', '1'],
                         help='whether to save depth image' )
-    parser.add_argument('--saveObj', default=False, type=lambda x: x.lower() in ['true', '1'],
+    parser.add_argument('--saveObj', default=True, type=lambda x: x.lower() in ['true', '1'],
                         help='whether to save outputs as .obj, detail mesh will end with _detail.obj. \
                             Note that saving objs could be slow' )
     parser.add_argument('--saveMat', default=False, type=lambda x: x.lower() in ['true', '1'],
