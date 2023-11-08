@@ -15,6 +15,7 @@
 *.rar
 *.tar
 *.zip
+*.glb
 
 # OS generated files #
 ######################

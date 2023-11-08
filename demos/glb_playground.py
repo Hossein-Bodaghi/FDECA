@@ -23,7 +23,7 @@ gltf.images.pop(0)
 # Step 3: Add the new image and texture to the GLB
 # Create and add a new image to the glTF (same as before)
 new_image = Image()
-new_image.uri = '/home/Shiva_roshanravan/Documents/FDECA/Test/RoshanRavan/RoshanRavan.png'
+new_image.uri = '/home/Shiva_roshanravan/Documents/FDECA/Test/Ehsan/Ehsan.png'
 gltf.images.append(new_image)
 
 # Create a new texture and associate it with the added image
@@ -43,7 +43,7 @@ gltf.convert_images(ImageFormat.DATAURI)
 #%%
 import numpy as np
 
-shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/RoshanRavan/identity.npy'
+shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Ehsan/identity.npy'
 flame_params = np.squeeze(np.load(shape_path))
 flame_params = flame_params.astype(np.float64)
 mesh = gltf.meshes[0]
