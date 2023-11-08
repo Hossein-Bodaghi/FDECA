@@ -23,8 +23,8 @@ gltf.images.pop(0)
 # Step 3: Add the new image and texture to the GLB
 # Create and add a new image to the glTF (same as before)
 new_image = Image()
-new_image.uri = '/home/Shiva_roshanravan/Documents/FDECA/Test/Ehsan/Ehsan.png'
-y.images.append(new_image)
+new_image.uri = '/home/Shiva_roshanravan/Documents/FDECA/Test/RoshanRavan/RoshanRavan.png'
+gltf.images.append(new_image)
 
 # Create a new texture and associate it with the added image
 new_texture = Texture()
@@ -38,6 +38,21 @@ gltf.meshes[0].primitives[0].material = len(gltf.materials) - 1
 
 # Now you can convert the images to data URIs and save the updated GLB
 gltf.convert_images(ImageFormat.DATAURI)
+
+
+#%%
+import numpy as np
+
+shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/RoshanRavan/identity.npy'
+flame_params = np.squeeze(np.load(shape_path))
+flame_params = flame_params.astype(np.float64)
+mesh = gltf.meshes[0]
+for idx, key_block in enumerate(mesh.extras['targetNames']):
+    # if key_block.name[:5] == "Shape":
+    if key_block[:5] == "Shape":
+        print(key_block)
+        if idx < 100:
+           gltf.meshes[0].weights[idx] = flame_params[idx]
 
 filename2 = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/flame2020_rr.glb'
 gltf.save(filename2)
