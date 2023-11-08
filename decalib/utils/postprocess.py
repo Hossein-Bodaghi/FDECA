@@ -52,9 +52,7 @@ def load_flame_shape(path):
 def add_flame_shape(gltf, flame_params):
     mesh = gltf.meshes[0]
     for idx, key_block in enumerate(mesh.extras['targetNames']):
-        # if key_block.name[:5] == "Shape":
         if key_block[:5] == "Shape":
-            print(key_block)
             if idx < 100:
                gltf.meshes[0].weights[idx] = flame_params[idx]   
     return gltf
@@ -64,9 +62,9 @@ def save_gltf(gltf, path):
 
 #%%
 filename = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/flame2020_ebrahimi.glb'
-new_imag_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Ehsan/Ehsan.png'
-shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Ehsan/identity.npy'
-filename2 = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/flame2020_rr.glb'
+new_imag_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Gandalf/Gandalf.png'
+shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Gandalf/identity.npy'
+filename2 = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/Gandalf.glb'
 
 gltf = load_glb(filename)
 gltf = change_texture(gltf,new_imag_path )

@@ -31,8 +31,7 @@ from decalib.utils.tensor_cropper import transform_points
 
 
 def main(args):
-    # if args.rasterizer_type != 'standard':
-    #     args.render_orig = False
+
     savefolder = args.savefolder
     device = args.device
     os.makedirs(savefolder, exist_ok=True)
@@ -45,7 +44,6 @@ def main(args):
     deca_cfg.rasterizer_type = args.rasterizer_type
     deca_cfg.model.extract_tex = args.extractTex
     deca = DECA(config = deca_cfg, device=device)
-    # for i in range(len(testdata)):
     for i in tqdm(range(len(testdata))):
         name = testdata[i]['imagename']
         os.makedirs(os.path.join(savefolder, name), exist_ok=True)
@@ -53,54 +51,19 @@ def main(args):
         with torch.no_grad():
             codedict = deca.encode(images)
             opdict, visdict = deca.decode(codedict) #tensor
-            if args.render_orig:
-                tform = testdata[i]['tform'][None, ...]
-                tform = torch.inverse(tform).transpose(1,2).to(device)
-                original_image = testdata[i]['original_image'][None, ...].to(device)
-                _, orig_visdict = deca.decode(codedict, render_orig=True, original_image=original_image, tform=tform)    
-                orig_visdict['inputs'] = original_image      
-        # added   
-        # id_codedict (deca.encode output) contains flame's parameters 
+        deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
+        # saving flame parameters
         flame_parameters = np.hstack((codedict['shape'].cpu().numpy(),
                               codedict['exp'].cpu().numpy(),
                               codedict['pose'].cpu().numpy()))
-        np.save(os.path.join(savefolder, name, 'identity.npy'), flame_parameters)
-        # added
-        if args.saveDepth or args.saveKpt or args.saveObj or args.saveMat or args.saveImages:
-            os.makedirs(os.path.join(savefolder, name), exist_ok=True)
-        # -- save results
-        if args.saveDepth:
-            depth_image = deca.render.render_depth(opdict['trans_verts']).repeat(1,3,1,1)
-            visdict['depth_images'] = depth_image
-            cv2.imwrite(os.path.join(savefolder, name, name + '_depth.jpg'), util.tensor2image(depth_image[0]))
-        if args.saveKpt:
-            np.savetxt(os.path.join(savefolder, name, name + '_kpt2d.txt'), opdict['landmarks2d'][0].cpu().numpy())
-            np.savetxt(os.path.join(savefolder, name, name + '_kpt3d.txt'), opdict['landmarks3d'][0].cpu().numpy())
-        if args.saveObj:
-            deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
-            print('the path is',os.path.join(savefolder, name, name + '.obj'))
-        if args.saveMat:
-            opdict = util.dict_tensor2npy(opdict)
-            savemat(os.path.join(savefolder, name, name + '.mat'), opdict)
-        if args.saveVis:
-            cv2.imwrite(os.path.join(savefolder, name + '_vis.jpg'), deca.visualize(visdict))
-            if args.render_orig:
-                cv2.imwrite(os.path.join(savefolder, name + '_vis_original_size.jpg'), deca.visualize(orig_visdict))
-        if args.saveImages:
-            for vis_name in ['inputs', 'rendered_images', 'albedo_images', 'shape_images', 'shape_detail_images', 'landmarks2d']:
-                if vis_name not in visdict.keys():
-                    continue
-                image = util.tensor2image(visdict[vis_name][0])
-                cv2.imwrite(os.path.join(savefolder, name, name + '_' + vis_name +'.jpg'), util.tensor2image(visdict[vis_name][0]))
-                if args.render_orig:
-                    image = util.tensor2image(orig_visdict[vis_name][0])
-                    cv2.imwrite(os.path.join(savefolder, name, 'orig_' + name + '_' + vis_name +'.jpg'), util.tensor2image(orig_visdict[vis_name][0]))
+            
+        print('the path is',os.path.join(savefolder, name, name + '.obj'))
     print(f'-- please check the results in {savefolder}')
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Downloads/IAN+MCKELLEN.jpg', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Downloads/Gandalf.jpg', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
     parser.add_argument('-s', '--savefolder', default='/home/Shiva_roshanravan/Documents/FDECA/Test', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')
