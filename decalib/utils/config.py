@@ -27,6 +27,7 @@ cfg.model.dense_template_path = os.path.join(cfg.deca_dir, 'data', 'texture_data
 cfg.model.mp_model_path = os.path.join(cfg.deca_dir, 'data', 'face_landmarker.task')
 cfg.model.only_face_path = os.path.join(cfg.deca_dir, 'data', 'only_face.png') 
 cfg.model.only_eyes_path = os.path.join(cfg.deca_dir, 'data', 'only_eyes.png')
+cfg.model.glb_path = os.path.join(cfg.deca_dir, 'data', 'generic.glb')
 # added
 cfg.model.fixed_displacement_path = os.path.join(cfg.deca_dir, 'data', 'fixed_displacement_256.npy')
 cfg.model.flame_model_path = os.path.join(cfg.deca_dir, 'data', 'generic_model.pkl') 

@@ -45,7 +45,7 @@ def change_texture(gltf, path):
     return gltf
 
 def load_flame_shape(path):
-    flame_params = np.squeeze(np.load(path))
+    flame_params = np.load(path)
     flame_params = flame_params.astype(np.float64)
     return flame_params
     
@@ -58,16 +58,11 @@ def add_flame_shape(gltf, flame_params):
     return gltf
 
 def save_gltf(gltf, path):
-    gltf.save(path)               
+    gltf.save(path)            
+    print(f'glb saved at: {path}')
 
-#%%
-filename = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/flame2020_ebrahimi.glb'
-new_imag_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Gandalf/Gandalf.png'
-shape_path = '/home/Shiva_roshanravan/Documents/FDECA/Test/Gandalf/identity.npy'
-filename2 = '/home/Shiva_roshanravan/Documents/Flame_test/flame_tools_H/data/Gandalf.glb'
-
-gltf = load_glb(filename)
-gltf = change_texture(gltf,new_imag_path )
-flame_params = load_flame_shape(shape_path)
-gltf = add_flame_shape(gltf, flame_params)
-save_gltf(gltf,filename2)
+def create_glb(glb_path, uv_path, flame_params, save_path):
+    gltf = load_glb(glb_path)
+    gltf = change_texture(gltf,uv_path)
+    gltf = add_flame_shape(gltf, flame_params)
+    save_gltf(gltf,save_path)

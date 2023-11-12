@@ -28,6 +28,7 @@ from decalib.datasets import datasets
 from decalib.utils import util
 from decalib.utils.config import cfg as deca_cfg
 from decalib.utils.tensor_cropper import transform_points
+from decalib.utils.postprocess import create_glb
 
 
 def main(args):
@@ -52,18 +53,28 @@ def main(args):
             codedict = deca.encode(images)
             opdict, visdict = deca.decode(codedict) #tensor
         deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
-        # saving flame parameters
+        print('the path is',os.path.join(savefolder, name, name + '.obj'))
+        
+        # creating and saving flame parameters
         flame_parameters = np.hstack((codedict['shape'].cpu().numpy(),
                               codedict['exp'].cpu().numpy(),
                               codedict['pose'].cpu().numpy()))
-            
-        print('the path is',os.path.join(savefolder, name, name + '.obj'))
+        flame_parameters = np.squeeze(flame_parameters)
+        np.save(os.path.join(savefolder, name, 'identity.npy'), flame_parameters)
+        flame_parameters = flame_parameters.astype(np.float64)
+        # creating and saving .glb file
+        glb_path = deca_cfg.model.glb_path
+        uv_path = os.path.join(savefolder, name, name + '.png')
+        save_path = os.path.join(savefolder, name, name + '.glb')
+        create_glb(glb_path, uv_path, flame_parameters, save_path)
+        print('glb saved at',os.path.join(savefolder, name, name + '.glb'))    
+        
     print(f'-- please check the results in {savefolder}')
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Downloads/Gandalf.jpg', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/FDECA/TestSamples/examples/Partners/Hossein1.jpg', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
     parser.add_argument('-s', '--savefolder', default='/home/Shiva_roshanravan/Documents/FDECA/Test', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')
