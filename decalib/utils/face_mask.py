@@ -74,6 +74,7 @@ def masking_face(image, model_path):
     mask = np.zeros((image.height,image.width,3),dtype='uint8')
     
     oval_mask = np.copy(mask)
+    oval_line = np.copy(mask)
     right_eye_mask = np.copy(mask)
     left_eye_mask = np.copy(mask)
     
@@ -91,9 +92,10 @@ def masking_face(image, model_path):
         pass
     cv2.drawContours(oval_mask, contours, 1, (255,255,255),-1)
     cv2.drawContours(left_eye_mask, contours, 3, (255,255,255),-1)
-    
+    cv2.drawContours(oval_line, contours, 1, (255,255,255),5)
     
     oval_imgray = cv2.cvtColor(oval_mask, cv2.COLOR_RGB2GRAY)
+    
     re_imgray = cv2.cvtColor(right_eye_mask, cv2.COLOR_RGB2GRAY)
     le_imgray = cv2.cvtColor(left_eye_mask, cv2.COLOR_RGB2GRAY)
     ret, thresh_ov = cv2.threshold(oval_imgray, 50, 255, 0)
@@ -102,4 +104,14 @@ def masking_face(image, model_path):
     
     final_thr = thresh_ov*thresh_re*thresh_le
     final_thr = np.reshape(final_thr, (final_thr.shape[0],final_thr.shape[1],1))
-    return final_thr
+    oval = np.reshape(thresh_ov, (thresh_ov.shape[0],thresh_ov.shape[1],1))
+    return final_thr, oval, oval_line
+
+#%%
+
+# model_path = '/home/Shiva_roshanravan/Documents/FDECA/data/face_landmarker.task'
+# img_path = '/home/Shiva_roshanravan/Documents/FDECA/TestSamples/examples/Partners/Reza.jpg'
+# img = cv2.imread(img_path)
+# a = masking_face(img, model_path)
+# oval_line = a[2]
+# plt.imshow(a[2])

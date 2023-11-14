@@ -52,9 +52,17 @@ def main(args):
         with torch.no_grad():
             codedict = deca.encode(images)
             opdict, visdict = deca.decode(codedict) #tensor
+
         deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
         print('the path is',os.path.join(savefolder, name, name + '.obj'))
         
+        import matplotlib.pyplot as plt
+        
+        inp_mask = opdict['inpainting_mask'].squeeze(0).cpu().permute(1,2,0).numpy()
+        
+        inp_mask = (inp_mask*255.).astype(np.uint8)
+        
+        cv2.imwrite(os.path.join(savefolder, name, 'inpainting' + '.png'),  inp_mask)
         # creating and saving flame parameters
         flame_parameters = np.hstack((codedict['shape'].cpu().numpy(),
                               codedict['exp'].cpu().numpy(),
@@ -74,7 +82,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
-    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Documents/FDECA/TestSamples/examples/Partners/Hossein1.jpg', type=str,
+    parser.add_argument('-i', '--inputpath', default='/home/Shiva_roshanravan/Downloads/Denzel.jpg', type=str,
                         help='path to the test data, can be image folder, image path, image list, video')
     parser.add_argument('-s', '--savefolder', default='/home/Shiva_roshanravan/Documents/FDECA/Test', type=str,
                         help='path to the output directory, where results(obj, txt files) will be stored.')

@@ -174,11 +174,17 @@ class DECA(nn.Module):
         img = img.permute(1, 2, 0).detach().cpu().numpy()
         img = img.astype(np.uint8)
         # creating the mask
-        face_mask = masking_face(img, self.cfg.model.mp_model_path)
+        face_mask, oval_mask, oval_line = masking_face(img, self.cfg.model.mp_model_path)
         # plt.imshow(face_mask)
         # make it compatible with other masks
+        oval_mask = torch.from_numpy(oval_mask).type(torch.float)/255
+        oval_mask = oval_mask.permute(2,0,1).unsqueeze(0).to(self.device)
+
         face_mask = torch.from_numpy(face_mask).type(torch.float)/255
         face_mask = face_mask.permute(2,0,1).unsqueeze(0).to(self.device)
+        
+        oval_line = torch.from_numpy(oval_line).type(torch.float)/255
+        oval_line = oval_line.permute(2,0,1).unsqueeze(0).to(self.device)
         ##### added    
         
         ## decode
@@ -257,13 +263,21 @@ class DECA(nn.Module):
             uv_gt = F.grid_sample(images, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
             # added
             tr_face_mask = F.grid_sample(face_mask, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
+            oval_face_mask = F.grid_sample(oval_mask, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
+            # a mask for only ovel to know the boundry of face
+            oval_line_mask = F.grid_sample(oval_line, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
             final_mask = tr_face_mask * self.only_face_mask + self.only_eyes_mask
+            final_oval_mask = oval_face_mask * self.only_face_mask + self.only_eyes_mask
+            oval_line_mask = oval_line_mask * self.only_face_mask
+            # oval_line_mask = 1 - oval_line_mask
             # added
             if self.cfg.model.use_tex:
                 ## TODO: poisson blending should give better-looking results
                 if self.cfg.model.extract_tex:
                     # changed. using created mask instead of constant mask
+                    
                     uv_texture_gt = uv_gt[:,:3,:,:]*(final_mask)  + (uv_texture[:,:3,:,:]*(1-final_mask))
+                    # uv_texture_gt = uv_texture[:,:3,:,:]*(final_mask)  + (uv_texture[:,:3,:,:]*(1-final_mask))
                     # changed
 
                 else:
@@ -272,7 +286,12 @@ class DECA(nn.Module):
                 uv_texture_gt = uv_gt[:,:3,:,:]*self.uv_face_eye_mask + (torch.ones_like(uv_gt[:,:3,:,:])*(1-self.uv_face_eye_mask)*0.7)
             
             opdict['uv_texture_gt'] = uv_texture_gt
-            opdict['inpainting_mask'] = 1- final_mask
+            opdict['inpainting_mask'] = self.uv_face_eye_mask - final_oval_mask
+            opdict['uv_texture'] = uv_texture
+            # opdict['inpainting_mask'] = self.uv_face_eye_mask - oval_face_mask
+            opdict['final_mask'] = final_mask
+            opdict['oval_line_mask'] = oval_line_mask
+            
             visdict = {
                 'inputs': images, 
                 'landmarks2d': util.tensor_vis_landmarks(images, landmarks2d),
@@ -318,51 +337,16 @@ class DECA(nn.Module):
         texture = util.tensor2image(opdict['uv_texture_gt'][i])
         
         ################## inpainting texture #########################
-        final_mask = opdict['inpainting_mask'][i]
-            
-        final_mask_np = final_mask.squeeze(0).cpu().numpy()
-            
-        texture = cv2.inpaint(texture,(final_mask_np* 255.).astype(np.uint8) , inpaintRadius=25, flags=cv2.INPAINT_TELEA)
-
-        ######################## End of inpainting texture #########################
+        # final_mask = opdict['inpainting_mask'][i]            
+        # final_mask_np = final_mask.squeeze(0).cpu().numpy()            
         
-        uvcoords = self.render.raw_uvcoords[0].cpu().numpy()
-        uvfaces = self.render.uvfaces[0].cpu().numpy()
-        # save coarse mesh, with texture and normal map
-        normal_map = util.tensor2image(opdict['uv_detail_normals'][i]*0.5 + 0.5)
-        util.write_obj(filename, vertices, faces, 
-                        texture=texture, 
-                        uvcoords=uvcoords, 
-                        uvfaces=uvfaces, 
-                        normal_map=normal_map)
-        # upsample mesh, save detailed mesh
-        texture = texture[:,:,[2,1,0]]
-        normals = opdict['normals'][i].cpu().numpy()
-        displacement_map = opdict['displacement_map'][i].cpu().numpy().squeeze()
-        dense_vertices, dense_colors, dense_faces = util.upsample_mesh(vertices, normals, faces, displacement_map, texture, self.dense_template)
-        util.write_obj(filename.replace('.obj', '_detail.obj'), 
-                        dense_vertices, 
-                        dense_faces,
-                        colors = dense_colors,
-                        inverse_face_order=True)
-
-    def save_glb(self, filename, opdict):
-        '''
-        vertices: [nv, 3], tensor
-        texture: [3, h, w], tensor
-        '''
-        i = 0
-        vertices = opdict['verts'][i].cpu().numpy()
-        faces = self.render.faces[0].cpu().numpy()
-        texture = util.tensor2image(opdict['uv_texture_gt'][i])
-        
-        ################## inpainting texture #########################
-        final_mask = opdict['inpainting_mask'][i]
-            
-        final_mask_np = final_mask.squeeze(0).cpu().numpy()
-            
-        texture = cv2.inpaint(texture,(final_mask_np* 255.).astype(np.uint8) , inpaintRadius=25, flags=cv2.INPAINT_TELEA)
-
+        # plt.imshow(opdict['inpainting_mask'].squeeze(0).cpu().permute(1, 2, 0).numpy())
+        oval_mask = opdict['oval_line_mask'][i]
+        oval_mask_np = oval_mask.squeeze(0).permute(1, 2, 0).cpu().numpy()     
+        oval_mask_np = cv2.cvtColor(oval_mask_np,cv2.COLOR_RGB2GRAY)
+        # plt.imshow(oval_mask_np)
+        # plt.show()
+        texture = cv2.inpaint(texture, (oval_mask_np * 255.).astype(np.uint8), inpaintRadius=15, flags=cv2.INPAINT_TELEA)
         ######################## End of inpainting texture #########################
         
         uvcoords = self.render.raw_uvcoords[0].cpu().numpy()
